@@ -1,0 +1,45 @@
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.buildDir = '../build'
+
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+    def configureJava17 = { proj ->
+        if (proj.hasProperty("android")) {
+            proj.android.compileOptions {
+                sourceCompatibility JavaVersion.VERSION_17
+                targetCompatibility JavaVersion.VERSION_17
+            }
+        }
+        proj.tasks.withType(JavaCompile).configureEach {
+            sourceCompatibility = "17"
+            targetCompatibility = "17"
+        }
+        proj.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+            compilerOptions {
+                jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+            }
+        }
+    }
+    if (project.state.executed) {
+        configureJava17(project)
+    } else {
+        project.afterEvaluate { proj ->
+            configureJava17(proj)
+        }
+    }
+    project.evaluationDependsOn(':app')
+}
+
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}
+
+tasks.named('wrapper') {
+    distributionType = Wrapper.DistributionType.ALL
+}
